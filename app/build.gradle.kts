@@ -78,7 +78,7 @@ dependencies {
     // Offline OCR for scanned/image-only PDF pages. Pure on-device native Tesseract - no Play
     // Services, no network, no dynamically-downloaded model (that's exactly why this was chosen
     // over ML Kit, which requires both). See the README's "How OCR works" section for details.
-    implementation("cz.adaptech.tesseract4android:tesseract4android:4.7.0")
+    implementation("cz.adaptech.tesseract4android:tesseract4android:4.9.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
