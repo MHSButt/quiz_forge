@@ -25,8 +25,18 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Set up the Android SDK
-        uses: android-actions/setup-android@v3
+      # GitHub's ubuntu-latest runners already have a working Android SDK + sdkmanager
+      # preinstalled, so we use that directly rather than a third-party "set up Android SDK"
+      # action - at the time this was written, android-actions/setup-android@v3 replaces the
+      # preinstalled (modern) cmdline-tools with an old downloaded one that tries to install
+      # Google's long-removed legacy "tools" package and fails with "Failed to find package
+      # 'tools'". Accepting licenses and installing only the exact packages this project needs
+      # avoids that entirely.
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Install required Android SDK packages
+        run: $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
