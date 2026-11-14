@@ -1,0 +1,7 @@
+<resources>
+    <!-- The whole UI is built with Jetpack Compose / Material 3, so this platform theme only
+         needs to exist to set the Activity window background/status bar before Compose takes
+         over - it deliberately doesn't pull in the (unused) View-based Material Components
+         library. -->
+    <style name="Theme.QuizForge" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

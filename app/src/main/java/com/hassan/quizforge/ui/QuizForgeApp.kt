@@ -1,0 +1,83 @@
+package com.hassan.quizforge.ui
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hassan.quizforge.ui.screens.ConfigureScreen
+import com.hassan.quizforge.ui.screens.HomeScreen
+import com.hassan.quizforge.ui.screens.QuizScreen
+import com.hassan.quizforge.util.ExportFormatter
+import com.hassan.quizforge.viewmodel.QuizViewModel
+import com.hassan.quizforge.viewmodel.UiState
+
+private const val PDF_MIME = "application/pdf"
+private const val DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+@Composable
+fun QuizForgeApp(viewModel: QuizViewModel = viewModel()) {
+    val context = LocalContext.current
+    val state = viewModel.uiState
+    var pendingExportText by remember { mutableStateOf<String?>(null) }
+
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let { viewModel.processDocument(context, it) } }
+
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        val text = pendingExportText
+        if (uri != null && text != null) {
+            runCatching {
+                context.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray()) }
+            }
+        }
+        pendingExportText = null
+    }
+
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        when (val current = state) {
+            is UiState.Success -> QuizScreen(
+                quiz = current.quiz,
+                onBack = viewModel::reset,
+                onExport = {
+                    pendingExportText = ExportFormatter.format(current.quiz)
+                    val baseName = current.quiz.sourceFileName.substringBeforeLast('.').ifBlank { "document" }
+                    createDocumentLauncher.launch("quiz_$baseName.txt")
+                }
+            )
+
+            is UiState.ReadyToConfigure -> ConfigureScreen(
+                fileName = current.fileName,
+                isPdf = current.isPdf,
+                totalUnits = current.totalUnits,
+                chapters = current.chapters,
+                initialMcqCount = viewModel.mcqCount,
+                initialShortAnswerCount = viewModel.shortAnswerCount,
+                onBack = viewModel::reset,
+                onGenerate = { selection, mcq, short ->
+                    viewModel.mcqCount = mcq
+                    viewModel.shortAnswerCount = short
+                    viewModel.generateQuiz(context, selection, mcq, short)
+                }
+            )
+
+            else -> HomeScreen(
+                loadingMessage = (current as? UiState.Loading)?.message,
+                errorMessage = (current as? UiState.Error)?.message,
+                onPickFile = { openDocumentLauncher.launch(arrayOf(PDF_MIME, DOCX_MIME)) },
+                onDismissError = viewModel::reset
+            )
+        }
+    }
+}
