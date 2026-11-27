@@ -118,6 +118,9 @@ fun QuizForgeApp(viewModel: QuizViewModel = viewModel()) {
 
                 ScreenKind.HOME -> HomeScreen(
                     loadingMessage = (state as? UiState.Loading)?.message,
+                    onSkipLoading = if ((state as? UiState.Loading)?.canSkip == true) {
+                        viewModel::skipChapterScan
+                    } else null,
                     errorMessage = (state as? UiState.Error)?.message,
                     onPickFile = { openDocumentLauncher.launch(arrayOf(PDF_MIME, DOCX_MIME)) },
                     onDismissError = viewModel::reset

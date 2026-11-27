@@ -13,7 +13,9 @@ import com.hassan.quizforge.extraction.DocxTextExtractor
 import com.hassan.quizforge.extraction.EmptyDocumentException
 import com.hassan.quizforge.extraction.FileType
 import com.hassan.quizforge.extraction.FileTypeDetector
+import com.hassan.quizforge.extraction.QuizForgeException
 import com.hassan.quizforge.extraction.OcrTextExtractor
+import com.hassan.quizforge.extraction.PdfContent
 import com.hassan.quizforge.extraction.PdfTextExtractor
 import com.hassan.quizforge.extraction.ScanDetector
 import com.hassan.quizforge.extraction.UnsupportedFileTypeException
@@ -38,7 +40,8 @@ sealed interface SelectionMode {
 
 sealed interface UiState {
     data object Idle : UiState
-    data class Loading(val message: String = "Reading document…") : UiState
+    /** [canSkip]: the current step is optional and the UI may offer a "Skip" button. */
+    data class Loading(val message: String = "Reading document…", val canSkip: Boolean = false) : UiState
     data class ReadyToConfigure(
         val fileName: String,
         val isPdf: Boolean,
@@ -66,6 +69,15 @@ class QuizViewModel : ViewModel() {
     private var pendingPdfPages: List<String>? = null
     private var pendingDocxParagraphs: List<DocxParagraph>? = null
 
+    /** Set from the UI thread when the user skips the scanned-page chapter search. */
+    @Volatile
+    private var skipChapterScanRequested = false
+
+    /** Stops the optional OCR chapter search; whatever was found so far is still used. */
+    fun skipChapterScan() {
+        skipChapterScanRequested = true
+    }
+
     /**
      * Phase 1: read the document and work out its structure - pages (PDF) or paragraphs
      * (.docx), plus any auto-detected chapters. Deliberately does NOT run OCR here even if the
@@ -85,8 +97,10 @@ class QuizViewModel : ViewModel() {
 
                     when (type) {
                         FileType.PDF -> {
-                            val pages = PdfTextExtractor.extractPerPage(appContext, uri)
-                            val chapters = ChapterDetector.detectPdfChapters(pages)
+                            val content = PdfTextExtractor.extract(appContext, uri)
+                            val pages = content.pages
+                            val headerText = ocrScannedPageHeaders(appContext, uri, content)
+                            val chapters = ChapterDetector.detectPdfChapters(content, headerText)
 
                             pendingUri = uri
                             pendingFileName = displayName
@@ -167,6 +181,39 @@ class QuizViewModel : ViewModel() {
                     UiState.Error(error.message ?: "Something went wrong while generating the quiz.")
                 }
             )
+        }
+    }
+
+    /**
+     * Scanned pages have no text layer, so a "Chapter 3" heading on them is invisible to the
+     * text-based detector. When the PDF has no bookmarks to rely on, OCR just the top of each
+     * scanned page (fast, low resolution) so their headings can be found too. The user can skip
+     * this on a long book and fall back to a page range.
+     */
+    private fun ocrScannedPageHeaders(context: Context, uri: Uri, content: PdfContent): Map<Int, String> {
+        if (ChapterDetector.hasUsableOutline(content)) return emptyMap()
+        val scanned = content.pages.indices.filter { ScanDetector.pageLooksScanned(content.pages[it]) }
+        if (scanned.isEmpty()) return emptyMap()
+
+        skipChapterScanRequested = false
+        uiState = UiState.Loading("Looking for chapters in scanned pages…", canSkip = true)
+        return try {
+            OcrTextExtractor.extractPageHeaders(
+                context, uri, scanned,
+                onProgress = { done, total ->
+                    uiState = UiState.Loading(
+                        "Looking for chapters in scanned pages - page $done of $total…",
+                        canSkip = true
+                    )
+                },
+                shouldStop = { skipChapterScanRequested }
+            )
+        } catch (e: QuizForgeException) {
+            // Chapter detection is a convenience - don't fail the import over it. Full OCR
+            // at generation time will report the problem properly if it's still there.
+            emptyMap()
+        } finally {
+            uiState = UiState.Loading()
         }
     }
 

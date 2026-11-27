@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -53,6 +54,8 @@ import androidx.compose.ui.unit.dp
 fun HomeScreen(
     loadingMessage: String?,
     errorMessage: String?,
+    /** Non-null while the current loading step is optional; shows a "Skip" button. */
+    onSkipLoading: (() -> Unit)? = null,
     onPickFile: () -> Unit,
     onDismissError: () -> Unit
 ) {
@@ -176,6 +179,12 @@ fun HomeScreen(
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.height(16.dp))
                             Text(loadingMessage ?: "Reading document…")
+                            if (onSkipLoading != null) {
+                                Spacer(Modifier.height(8.dp))
+                                TextButton(onClick = onSkipLoading) {
+                                    Text("Skip - I'll pick pages myself")
+                                }
+                            }
                         }
                     }
                 }
