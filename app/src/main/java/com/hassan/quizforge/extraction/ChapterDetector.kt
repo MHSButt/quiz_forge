@@ -32,20 +32,31 @@ object ChapterDetector {
         "eighteen", "nineteen", "twenty"
     )
 
-    /** Preferred keyword first: when a document uses several, the first one present wins. */
-    private val KEYWORD_PRIORITY = listOf("chapter", "unit", "module", "lesson", "part", "section")
+    /**
+     * Preferred keyword first: when a document uses several, the first one present wins. Larger
+     * units come first, so e.g. a handout with a few Modules of many Topics lists the Modules.
+     */
+    private val KEYWORD_PRIORITY = listOf(
+        "chapter", "unit", "module", "lecture", "lesson", "week", "topic", "part", "section"
+    )
 
-    private val KEYWORD_PATTERN = "chapter|ch\\.|section|part|unit|lesson|module"
+    private val KEYWORD_PATTERN =
+        "chapter|ch\\.|lecture|lect\\.?|lec\\.?|section|part|unit|lesson|module|week|topic"
+
+    /** Optional "No." / "Number" between keyword and number: "Lecture No. 1", "Topic # 5". */
+    private const val NUMBER_LABEL_PATTERN = "(?:(?i:no|nr|number)\\s*\\.?\\s*[:#]?\\s*)?"
 
     // Roman numerals are matched upper-case only, so ordinary words like "did" or "mix" after
     // "Unit"/"Lesson" aren't read as numbers. "Section 2.1" (a sub-section) is rejected.
+    // Handles Virtual University handout styles like "Lecture No. 05", "Topic # 012", "Week 3".
     private val HEADING_REGEX = Regex(
-        "^(?i:($KEYWORD_PATTERN))\\s*[-–—:.#]?\\s*" +
+        "^(?i:($KEYWORD_PATTERN))\\s*[-–—:.#]?\\s*$NUMBER_LABEL_PATTERN" +
             "(\\d{1,3}(?![.,]\\d)|[IVXLCDM]{1,7}|(?i:${NUMBER_WORDS.joinToString("|")}))" +
             "(?![\\p{L}\\d])(.*)$"
     )
 
-    private val KEYWORD_ONLY_REGEX = Regex("^(?i:($KEYWORD_PATTERN))$")
+    /** "LECTURE NO." alone on a line, with the number on the next one. */
+    private val KEYWORD_ONLY_REGEX = Regex("^(?i:($KEYWORD_PATTERN))\\s*[-–—:.#]?\\s*$NUMBER_LABEL_PATTERN$")
 
     /** Dot leaders or a trailing page number: "Chapter 1 Introduction ........ 5". */
     private val TOC_LINE_REGEX = Regex("""(\.{3,}|…|\s\.(\s\.){2,}|\S\s+\d{1,4})\s*$""")
@@ -181,7 +192,11 @@ object ChapterDetector {
         if (rest.endsWith('.') && rest.split(' ').size > 6) return null
 
         val number = parseNumber(match.groupValues[2]) ?: return null
-        val keyword = match.groupValues[1].lowercase().let { if (it == "ch.") "chapter" else it }
+        val keyword = when (val k = match.groupValues[1].lowercase()) {
+            "ch." -> "chapter"
+            "lect", "lect.", "lec", "lec." -> "lecture"
+            else -> k
+        }
         return Heading(keyword, number, line)
     }
 

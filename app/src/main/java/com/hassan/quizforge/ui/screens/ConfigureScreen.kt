@@ -110,7 +110,7 @@ fun ConfigureScreen(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "$totalUnits ${unitWord}${if (totalUnits == 1) "" else "s"}" +
-                        if (chapters.isNotEmpty()) " · ${chapters.size} chapter(s) detected" else "",
+                        if (chapters.isNotEmpty()) " · ${chapters.size} section(s) detected" else "",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -134,13 +134,13 @@ fun ConfigureScreen(
                 if (chapters.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
                     ModeSegment(
-                        label = "Select chapters",
+                        label = "Select chapters / lectures / topics",
                         selected = mode == ModeChoice.CHAPTERS,
                         onClick = { mode = ModeChoice.CHAPTERS }
                     )
                 } else {
                     Text(
-                        "No chapters were automatically detected in this document" +
+                        "No chapters, lectures or topics were automatically detected in this document" +
                             if (isPdf) " - use a custom page range below instead." else ".",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
