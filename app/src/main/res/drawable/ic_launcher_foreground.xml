@@ -1,6 +1,7 @@
-<!-- Simple placeholder icon: a "page" with a few lines of text and a checkmark badge,
-     meant to evoke a quiz/document. Swap it for your own art any time via Android Studio's
-     Image Asset tool (right-click res -> New -> Image Asset). -->
+<!-- Original icon (no third-party trademarks): a folded-corner page with a few lines of text
+     and a checkmark badge, meant to evoke a document turned into a graded quiz. Colors match the
+     app's own brand palette (ui/theme/Color.kt). Swap for your own art any time via Android
+     Studio's Image Asset tool (right-click res -> New -> Image Asset). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -10,28 +11,33 @@
     <!-- paper -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M32,20 L72,20 L72,88 L32,88 Z" />
+        android:pathData="M30,18 L66,18 L76,28 L76,90 L30,90 Z" />
+
+    <!-- folded corner -->
+    <path
+        android:fillColor="#C7D0F5"
+        android:pathData="M66,18 L76,28 L66,28 Z" />
 
     <!-- text lines -->
     <path
-        android:fillColor="#1E3A5F"
-        android:pathData="M40,32 L64,32 L64,37 L40,37 Z" />
+        android:fillColor="#00174A"
+        android:pathData="M38,40 L68,40 L68,45 L38,45 Z" />
     <path
-        android:fillColor="#1E3A5F"
-        android:pathData="M40,45 L64,45 L64,50 L40,50 Z" />
+        android:fillColor="#00174A"
+        android:pathData="M38,52 L68,52 L68,57 L38,57 Z" />
     <path
-        android:fillColor="#1E3A5F"
-        android:pathData="M40,58 L56,58 L56,63 L40,63 Z" />
+        android:fillColor="#00174A"
+        android:pathData="M38,64 L56,64 L56,69 L38,69 Z" />
 
     <!-- checkmark badge -->
     <path
-        android:fillColor="#2FBF71"
-        android:pathData="M61,63 A13,13 0 1,0 87,63 A13,13 0 1,0 61,63 Z" />
+        android:fillColor="#1B8A4A"
+        android:pathData="M60,67 A13,13 0 1,0 86,67 A13,13 0 1,0 60,67 Z" />
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
         android:strokeWidth="3.4"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M68,63 L73,69 L81,58" />
+        android:pathData="M67,67 L72,73 L80,62" />
 </vector>

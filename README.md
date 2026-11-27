@@ -76,6 +76,13 @@ Play Services and downloads its model from the internet the first time it runs, 
 mean this app could no longer honestly claim to need zero internet access - that's the whole
 reason Tesseract was used instead).
 
+This library is published via [JitPack](https://jitpack.io) rather than Maven Central, even
+though its group id (`cz.adaptech.tesseract4android`) looks like an ordinary Maven Central
+coordinate - that's why `settings.gradle.kts` adds `https://jitpack.io` as a repository. If you
+ever see a "Could not find cz.adaptech.tesseract4android..." Gradle error, that repository line
+is what's missing or misconfigured; it's deliberately present in this project, not something to
+remove while debugging another issue.
+
 The English trained-data file it needs (`eng.traineddata`, ~4 MB) is already bundled at
 `app/src/main/assets/tessdata/eng.traineddata`, so OCR works out of the box with no setup. The
 app copies it into app-private storage the first time OCR runs (Tesseract needs a real
@@ -197,7 +204,8 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 This project includes a ready-to-use GitHub Actions workflow
 (`.github/workflows/build-apk.yml`) that builds an installable debug APK on GitHub's own
 servers - useful if you don't have Android Studio installed anywhere. Those servers have full
-internet access to Google's and Maven Central's repositories, which is all this build needs.
+internet access to Google's, Maven Central's, and JitPack's repositories, which is all this
+build needs.
 
 1. Create a new repository on [GitHub](https://github.com/new) (private is fine) and push this
    project to it:
@@ -266,5 +274,3 @@ all. Every document you process - including OCR on scanned pages - stays on your
 If you ship this app publicly, keep an entry for each of these (and whatever else you add) in
 an open-source notices screen - that's a legal courtesy these licenses ask for, not something
 this README can do for you.
-# quiz_forge
-# quiz_forge

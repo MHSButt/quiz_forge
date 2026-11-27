@@ -1,5 +1,10 @@
 package com.hassan.quizforge.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,23 +12,27 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,7 +46,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -90,8 +98,8 @@ fun ConfigureScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -109,17 +117,23 @@ fun ConfigureScreen(
             }
 
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Text("What to include", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
+                Text(
+                    "What to include",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(10.dp))
 
-                ModeRow(
+                ModeSegment(
                     label = "Whole document",
                     selected = mode == ModeChoice.WHOLE,
                     onClick = { mode = ModeChoice.WHOLE }
                 )
 
                 if (chapters.isNotEmpty()) {
-                    ModeRow(
+                    Spacer(Modifier.height(8.dp))
+                    ModeSegment(
                         label = "Select chapters",
                         selected = mode == ModeChoice.CHAPTERS,
                         onClick = { mode = ModeChoice.CHAPTERS }
@@ -130,12 +144,13 @@ fun ConfigureScreen(
                             if (isPdf) " - use a custom page range below instead." else ".",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 40.dp, bottom = 4.dp)
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
 
                 if (isPdf) {
-                    ModeRow(
+                    Spacer(Modifier.height(8.dp))
+                    ModeSegment(
                         label = "Custom page range",
                         selected = mode == ModeChoice.RANGE,
                         onClick = { mode = ModeChoice.RANGE }
@@ -143,112 +158,159 @@ fun ConfigureScreen(
                 }
             }
 
-            when (mode) {
-                ModeChoice.CHAPTERS -> {
-                    Row(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        TextButton(onClick = { selectedChapters = chapters.indices.toSet() }) {
-                            Text("Select all")
-                        }
-                        TextButton(onClick = { selectedChapters = emptySet() }) {
-                            Text("Select none")
-                        }
-                    }
-                    LazyColumn(modifier = Modifier.weight(1f, fill = false).padding(horizontal = 8.dp)) {
-                        items(chapters.size) { index ->
-                            val chapter = chapters[index]
-                            val checked = index in selectedChapters
-                            val toggle = {
-                                selectedChapters = if (checked) selectedChapters - index else selectedChapters + index
+            Spacer(Modifier.height(12.dp))
+
+            AnimatedContent(
+                targetState = mode,
+                transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(150)) },
+                label = "configure-mode"
+            ) { currentMode ->
+                when (currentMode) {
+                    ModeChoice.CHAPTERS -> Column {
+                        Row(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            TextButton(onClick = { selectedChapters = chapters.indices.toSet() }) {
+                                Text("Select all")
                             }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .selectable(selected = checked, onClick = toggle)
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(checked = checked, onCheckedChange = { toggle() })
-                                Column {
-                                    Text(chapter.title, style = MaterialTheme.typography.bodyLarge)
-                                    if (isPdf) {
-                                        val range = if (chapter.startIndex == chapter.endIndex) {
-                                            "Page ${chapter.startIndex + 1}"
+                            TextButton(onClick = { selectedChapters = emptySet() }) {
+                                Text("Select none")
+                            }
+                        }
+                        LazyColumn(
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .height(280.dp)
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            items(chapters.size) { index ->
+                                val chapter = chapters[index]
+                                val checked = index in selectedChapters
+                                val toggle = {
+                                    selectedChapters =
+                                        if (checked) selectedChapters - index else selectedChapters + index
+                                }
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                        .selectable(selected = checked, onClick = toggle),
+                                    shape = MaterialTheme.shapes.medium,
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (checked) {
+                                            MaterialTheme.colorScheme.primaryContainer
                                         } else {
-                                            "Pages ${chapter.startIndex + 1}-${chapter.endIndex + 1}"
+                                            MaterialTheme.colorScheme.surfaceVariant
                                         }
-                                        Text(
-                                            range,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(
+                                            checked = checked,
+                                            onCheckedChange = { toggle() },
+                                            colors = CheckboxDefaults.colors(
+                                                checkedColor = MaterialTheme.colorScheme.primary
+                                            )
                                         )
+                                        Column {
+                                            Text(
+                                                chapter.title,
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                color = if (checked) {
+                                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                                } else {
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                                }
+                                            )
+                                            if (isPdf) {
+                                                val range = if (chapter.startIndex == chapter.endIndex) {
+                                                    "Page ${chapter.startIndex + 1}"
+                                                } else {
+                                                    "Pages ${chapter.startIndex + 1}-${chapter.endIndex + 1}"
+                                                }
+                                                Text(
+                                                    range,
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                ModeChoice.RANGE -> {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = fromPageText,
-                            onValueChange = { fromPageText = it.filter(Char::isDigit) },
-                            label = { Text("From page") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = toPageText,
-                            onValueChange = { toPageText = it.filter(Char::isDigit) },
-                            label = { Text("To page") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
+                    ModeChoice.RANGE -> Column {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = fromPageText,
+                                onValueChange = { fromPageText = it.filter(Char::isDigit) },
+                                label = { Text("From page") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                shape = MaterialTheme.shapes.small,
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = toPageText,
+                                onValueChange = { toPageText = it.filter(Char::isDigit) },
+                                label = { Text("To page") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                shape = MaterialTheme.shapes.small,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "This document has $totalUnits pages.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp)
                         )
                     }
-                    Text(
-                        "This document has $totalUnits pages.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-                }
 
-                ModeChoice.WHOLE -> Spacer(Modifier.height(8.dp))
+                    ModeChoice.WHOLE -> Spacer(Modifier.height(8.dp))
+                }
             }
 
             Card(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("How many questions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedTextField(
-                            value = mcqText,
-                            onValueChange = { mcqText = it.filter(Char::isDigit).take(3) },
-                            label = { Text("Multiple-choice") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    Text(
+                        "How many questions",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        QuestionCountStepper(
+                            label = "Multiple-choice",
+                            valueText = mcqText,
+                            onValueChange = { mcqText = it },
                             modifier = Modifier.weight(1f)
                         )
-                        OutlinedTextField(
-                            value = shortText,
-                            onValueChange = { shortText = it.filter(Char::isDigit).take(3) },
-                            label = { Text("Short-answer") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        QuestionCountStepper(
+                            label = "Short-answer",
+                            valueText = shortText,
+                            onValueChange = { shortText = it },
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         "Up to $MAX_QUESTIONS_PER_TYPE of each. A short or narrow selection may " +
                             "yield fewer than you ask for - QuizForge won't repeat itself just to " +
                             "hit a number.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
             }
@@ -270,12 +332,13 @@ fun ConfigureScreen(
                     )
                 },
                 enabled = canGenerate,
+                shape = MaterialTheme.shapes.large,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .height(52.dp)
+                    .height(56.dp)
             ) {
-                Text("Generate quiz")
+                Text("Generate quiz", style = MaterialTheme.typography.titleSmall)
             }
             Spacer(Modifier.height(8.dp))
         }
@@ -283,16 +346,80 @@ fun ConfigureScreen(
 }
 
 @Composable
-private fun ModeRow(label: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
+private fun ModeSegment(label: String, selected: Boolean, onClick: () -> Unit) {
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .selectable(selected = selected, onClick = onClick)
-            .padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .selectable(selected = selected, onClick = onClick),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+        )
     ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Spacer(Modifier.width(4.dp))
-        Text(label, style = MaterialTheme.typography.bodyLarge)
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+        }
+    }
+}
+
+/** A number field flanked by -/+ buttons, clamped to [0, MAX_QUESTIONS_PER_TYPE]. */
+@Composable
+private fun QuestionCountStepper(
+    label: String,
+    valueText: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val value = valueText.toIntOrNull() ?: 0
+
+    Column(modifier = modifier) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+        Spacer(Modifier.height(6.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            FilledIconButton(
+                onClick = { onValueChange((value - 1).coerceIn(0, MAX_QUESTIONS_PER_TYPE).toString()) },
+                shape = CircleShape,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Filled.Remove, contentDescription = "Decrease", modifier = Modifier.size(16.dp))
+            }
+
+            OutlinedTextField(
+                value = valueText,
+                onValueChange = { onValueChange(it.filter(Char::isDigit).take(3)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = MaterialTheme.shapes.small,
+                textStyle = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(1f).padding(horizontal = 6.dp)
+            )
+
+            FilledIconButton(
+                onClick = { onValueChange((value + 1).coerceIn(0, MAX_QUESTIONS_PER_TYPE).toString()) },
+                shape = CircleShape,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "Increase", modifier = Modifier.size(16.dp))
+            }
+        }
     }
 }
