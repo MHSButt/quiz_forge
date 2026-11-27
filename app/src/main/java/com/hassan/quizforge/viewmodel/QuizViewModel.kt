@@ -40,8 +40,15 @@ sealed interface SelectionMode {
 
 sealed interface UiState {
     data object Idle : UiState
-    /** [canSkip]: the current step is optional and the UI may offer a "Skip" button. */
-    data class Loading(val message: String = "Reading document…", val canSkip: Boolean = false) : UiState
+    /**
+     * [canSkip]: the current step is optional and the UI may offer a "Skip" button.
+     * [progress]: 0..1 when the step's length is known (OCR), null for an indeterminate spinner.
+     */
+    data class Loading(
+        val message: String = "Reading document…",
+        val canSkip: Boolean = false,
+        val progress: Float? = null
+    ) : UiState
     data class ReadyToConfigure(
         val fileName: String,
         val isPdf: Boolean,
@@ -203,7 +210,8 @@ class QuizViewModel : ViewModel() {
                 onProgress = { done, total ->
                     uiState = UiState.Loading(
                         "Looking for chapters in scanned pages - page $done of $total…",
-                        canSkip = true
+                        canSkip = true,
+                        progress = done.toFloat() / total
                     )
                 },
                 shouldStop = { skipChapterScanRequested }
@@ -245,7 +253,10 @@ class QuizViewModel : ViewModel() {
         )
 
         val ocrResults = OcrTextExtractor.extractPages(context, uri, scannedAmongSelected) { done, total ->
-            uiState = UiState.Loading("Running on-device text recognition - page $done of $total…")
+            uiState = UiState.Loading(
+                "Running on-device text recognition - page $done of $total…",
+                progress = done.toFloat() / total
+            )
         }
 
         return selectedIndices.joinToString("\n\n") { i -> ocrResults[i] ?: pages[i] }

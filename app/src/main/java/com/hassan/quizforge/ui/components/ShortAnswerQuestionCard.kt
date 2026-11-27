@@ -45,10 +45,13 @@ import com.hassan.quizforge.model.ShortAnswerQuestion
 fun ShortAnswerQuestionCard(
     question: ShortAnswerQuestion,
     index: Int,
-    onRevealed: () -> Unit = {}
+    // Owned by QuizScreen so the progress bar and "Start over" always agree with the card.
+    revealed: Boolean,
+    onRevealedChange: (Boolean) -> Unit,
+    /** Changes when the user starts the quiz over, clearing what was typed. */
+    attempt: Int = 0
 ) {
-    var myAnswer by rememberSaveable(question.id) { mutableStateOf("") }
-    var revealed by rememberSaveable(question.id) { mutableStateOf(false) }
+    var myAnswer by rememberSaveable(question.id, attempt) { mutableStateOf("") }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -95,10 +98,7 @@ fun ShortAnswerQuestionCard(
 
             if (!revealed) {
                 Button(
-                    onClick = {
-                        revealed = true
-                        onRevealed()
-                    },
+                    onClick = { onRevealedChange(true) },
                     shape = MaterialTheme.shapes.medium,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -147,7 +147,7 @@ fun ShortAnswerQuestionCard(
                         horizontalArrangement = Arrangement.End
                     ) {
                         Button(
-                            onClick = { revealed = false },
+                            onClick = { onRevealedChange(false) },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color.Transparent,
                                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant

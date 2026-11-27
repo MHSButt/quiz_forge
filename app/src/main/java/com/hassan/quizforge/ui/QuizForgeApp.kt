@@ -118,6 +118,7 @@ fun QuizForgeApp(viewModel: QuizViewModel = viewModel()) {
 
                 ScreenKind.HOME -> HomeScreen(
                     loadingMessage = (state as? UiState.Loading)?.message,
+                    loadingProgress = (state as? UiState.Loading)?.progress,
                     onSkipLoading = if ((state as? UiState.Loading)?.canSkip == true) {
                         viewModel::skipChapterScan
                     } else null,

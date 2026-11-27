@@ -1,22 +1,30 @@
 package com.hassan.quizforge.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Error
@@ -30,10 +38,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -47,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +64,8 @@ import androidx.compose.ui.unit.dp
 fun HomeScreen(
     loadingMessage: String?,
     errorMessage: String?,
+    /** 0..1 when the current step's length is known; null shows a spinner instead. */
+    loadingProgress: Float? = null,
     /** Non-null while the current loading step is optional; shows a "Skip" button. */
     onSkipLoading: (() -> Unit)? = null,
     onPickFile: () -> Unit,
@@ -74,11 +86,14 @@ fun HomeScreen(
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // Scrolls on small phones / landscape, but stays vertically centred when it fits.
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = maxHeight)
+                    .padding(horizontal = 24.dp, vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -86,7 +101,10 @@ fun HomeScreen(
                     visible = visible,
                     enter = fadeIn(tween(450)) + slideInVertically(tween(450)) { it / 4 }
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        modifier = Modifier.widthIn(max = 520.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(96.dp)
@@ -106,17 +124,26 @@ fun HomeScreen(
                         Text(
                             "Turn a document into a quiz",
                             style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onBackground
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center
                         )
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(10.dp))
                         Text(
-                            "Pick a PDF or Word (.docx) file. On the next screen you can choose " +
-                                "chapters or a page range and how many questions to generate.",
+                            "Handouts, notes or textbooks - pick the chapters or lectures you " +
+                                "need and practise with auto-generated questions.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
                         )
 
-                        Spacer(Modifier.height(28.dp))
+                        Spacer(Modifier.height(16.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            InfoPill("PDF")
+                            InfoPill("Word .docx")
+                            InfoPill("Scanned PDFs")
+                        }
+
+                        Spacer(Modifier.height(24.dp))
 
                         Button(
                             onClick = onPickFile,
@@ -133,7 +160,11 @@ fun HomeScreen(
                             Text("Choose PDF or Word file", style = MaterialTheme.typography.titleSmall)
                         }
 
-                        Spacer(Modifier.height(20.dp))
+                        Spacer(Modifier.height(24.dp))
+
+                        HowItWorksCard()
+
+                        Spacer(Modifier.height(12.dp))
 
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -165,29 +196,11 @@ fun HomeScreen(
             }
 
             if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.32f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Card(shape = MaterialTheme.shapes.large) {
-                        Column(
-                            modifier = Modifier.padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.height(16.dp))
-                            Text(loadingMessage ?: "Reading document…")
-                            if (onSkipLoading != null) {
-                                Spacer(Modifier.height(8.dp))
-                                TextButton(onClick = onSkipLoading) {
-                                    Text("Skip - I'll pick pages myself")
-                                }
-                            }
-                        }
-                    }
-                }
+                LoadingOverlay(
+                    message = loadingMessage ?: "Reading document…",
+                    progress = loadingProgress,
+                    onSkip = onSkipLoading
+                )
             }
         }
     }
@@ -202,5 +215,124 @@ fun HomeScreen(
                 Button(onClick = onDismissError, shape = MaterialTheme.shapes.medium) { Text("OK") }
             }
         )
+    }
+}
+
+@Composable
+private fun InfoPill(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onTertiaryContainer,
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.tertiaryContainer)
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+    )
+}
+
+@Composable
+private fun HowItWorksCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                "How it works",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            HowItWorksStep(1, "Pick a PDF or Word file from your phone.")
+            HowItWorksStep(2, "Choose chapters, lectures, topics or a page range.")
+            HowItWorksStep(3, "Practise with multiple-choice and short-answer questions.")
+        }
+    }
+}
+
+@Composable
+private fun HowItWorksStep(number: Int, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(26.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "$number",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun LoadingOverlay(message: String, progress: Float?, onSkip: (() -> Unit)?) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f))
+            // Swallow taps so nothing underneath can be pressed while work is running.
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {}
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            shape = MaterialTheme.shapes.large,
+            modifier = Modifier.padding(32.dp).widthIn(max = 420.dp).fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (progress == null) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                } else {
+                    val animated by animateFloatAsState(
+                        targetValue = progress.coerceIn(0f, 1f),
+                        animationSpec = tween(250),
+                        label = "loading-progress"
+                    )
+                    Text(
+                        "${(animated * 100).toInt()}%",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    LinearProgressIndicator(
+                        progress = { animated },
+                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+                if (onSkip != null) {
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedButton(onClick = onSkip, shape = MaterialTheme.shapes.medium) {
+                        Text("Skip - I'll pick pages myself")
+                    }
+                }
+            }
+        }
     }
 }

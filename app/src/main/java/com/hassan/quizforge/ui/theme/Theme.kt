@@ -87,7 +87,9 @@ fun QuizForgeTheme(
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            // The top app bars are filled with `primary`: deep indigo in light theme (needs light
+            // status-bar icons) and pale indigo in dark theme (needs dark icons).
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
         }
     }
 

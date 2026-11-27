@@ -5,6 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hassan.quizforge.model.McqQuestion
@@ -188,6 +191,7 @@ fun McqQuestionCard(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         if (correct) "Correct!" else "Correct answer: ${question.correctAnswer}",
+                        modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.labelLarge,
                         color = if (correct) {
                             if (isDark) OnCorrectGreenDark else MaterialTheme.colorScheme.onSurface
@@ -195,6 +199,34 @@ fun McqQuestionCard(
                             MaterialTheme.colorScheme.onErrorContainer
                         }
                     )
+                }
+
+                // Show where the question came from, so a wrong answer is also a quick lesson.
+                if (question.sourceSentence.isNotBlank()) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                        Box(
+                            modifier = Modifier
+                                .width(3.dp)
+                                .fillMaxHeight()
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                "From the text",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                question.sourceSentence.trim(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontStyle = FontStyle.Italic,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
         }
