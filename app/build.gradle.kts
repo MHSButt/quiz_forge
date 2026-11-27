@@ -8,7 +8,13 @@ plugins {
 
 android {
     namespace = "com.hassan.quizforge"
-    compileSdk = 37
+    // Compose 1.13 / AndroidX libraries need Android 37.1+ APIs, so compile against 37.2
+    // (a minor SDK release). This doesn't change which phones can run the app - that's minSdk.
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     defaultConfig {
         applicationId = "com.hassan.quizforge"

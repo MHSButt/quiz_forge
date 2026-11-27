@@ -197,7 +197,7 @@ fun HomeScreen(
 
             if (isLoading) {
                 LoadingOverlay(
-                    message = loadingMessage ?: "Reading document…",
+                    message = loadingMessage,
                     progress = loadingProgress,
                     onSkip = onSkipLoading
                 )
